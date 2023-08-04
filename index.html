@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>YouTube Thumbnail Extractor</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      margin: 0;
+      padding: 0;
+      transition: background-color 0.3s ease;
+    }
+
+    header {
+      background-color: #f44336;
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+
+    main {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    #thumbnails {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .thumbnail {
+      margin: 10px;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      cursor: pointer;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      margin-bottom: 10px;
+    }
+
+    button {
+      padding: 10px 20px;
+      background-color: #f44336;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    button:hover {
+      background-color: #d32f2f;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>YouTube Thumbnail Extractor</h1>
+  </header>
+
+  <main>
+    <input type="text" id="videoUrl" placeholder="Enter YouTube video URL">
+    <button onclick="getThumbnail()">Get Thumbnails</button>
+
+    <div id="thumbnails"></div>
+  </main>
+
+  <script>
+    function getThumbnail() {
+      const videoUrl = document.getElementById('videoUrl').value;
+      const videoId = extractVideoIdFromUrl(videoUrl);
+      if (!videoId) {
+        alert('Invalid YouTube video URL');
+        return;
+      }
+
+      const thumbnailUrls = generateThumbnailUrls(videoId);
+      displayThumbnails(thumbnailUrls);
+    }
+
+    function extractVideoIdFromUrl(url) {
+      const videoIdMatch = url.match(/(?:\?v=|\/embed\/|\.be\/)([\w-]{11})/);
+      return videoIdMatch ? videoIdMatch[1] : null;
+    }
+
+    function generateThumbnailUrls(videoId) {
+      return [
+        `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`, // Highest resolution available
+        `https://img.youtube.com/vi/${videoId}/sddefault.jpg`, // Standard definition
+        `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`, // High quality (480x360)
+      ];
+    }
+
+    function displayThumbnails(thumbnailUrls) {
+      const thumbnailContainer = document.getElementById('thumbnails');
+      thumbnailContainer.innerHTML = '';
+
+      for (const url of thumbnailUrls) {
+        const image = document.createElement('img');
+        image.setAttribute('src', url);
+        image.setAttribute('alt', 'Thumbnail');
+        image.classList.add('thumbnail');
+
+        image.addEventListener('load', function () {
+          const color = getDominantColor(image);
+          document.body.style.backgroundColor = color;
+        });
+
+        thumbnailContainer.appendChild(image);
+      }
+    }
+
+    function getDominantColor(image) {
+      if (!image.complete) {
+        // If the image is not fully loaded yet, try again later
+        setTimeout(function () {
+          getDominantColor(image);
+        }, 100);
+        return;
+      }
+
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      canvas.width = image.width;
+      canvas.height = image.height;
+      context.drawImage(image, 0, 0, image.width, image.height);
+      const pixelData = context.getImageData(0, 0, image.width, image.height).data;
+      const colorCount = {};
+      let dominantColor = 'white';
+      let maxCount = 0;
+
+      for (let i = 0; i < pixelData.length; i += 4) {
+        const red = pixelData[i];
+        const green = pixelData[i + 1];
+        const blue = pixelData[i + 2];
+        const rgb = `rgb(${red},${green},${blue})`;
+
+        colorCount[rgb] = (colorCount[rgb] || 0) + 1;
+
+        if (colorCount[rgb] > maxCount) {
+          maxCount = colorCount[rgb];
+          dominantColor = rgb;
+        }
+      }
+
+      return dominantColor;
+    }
+  </script>
+</body>
+</html>
